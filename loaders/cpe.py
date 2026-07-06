@@ -1,3 +1,4 @@
+# Inserts in CPE, cve_product, and cve_product_version_range tables. No unique constraints on the latter two, so we do a manual check to avoid duplicates.
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ def load_cpe_configurations_for_cve(conn, cve_id: str, cpe_configurations: list)
         for entry in cpe_configurations:
             cpe_id = get_or_create_cpe_id(conn, entry["criteria"])
 
-            # cve_product has no unique constraint -- manual check to avoid duplicates
+            # cve_product 
             cur.execute(
                 "SELECT id FROM cve_product WHERE cve_id = %s AND cpe_id = %s",
                 (cve_id, cpe_id),
@@ -72,7 +73,7 @@ def load_cpe_configurations_for_cve(conn, cve_id: str, cpe_configurations: list)
                 entry.get("version_end_excluding"),
             )
             if any(ranges):
-                # avoid duplicate range rows on re-run -- no unique constraint here either
+                # cve_product_version_range 
                 cur.execute(
                     "SELECT id FROM cve_product_version_range WHERE cve_product_id = %s",
                     (cve_product_id,),
