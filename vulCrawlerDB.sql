@@ -545,13 +545,6 @@ CREATE TABLE alembic_version (
 
 -- =====================================================================
 -- 29. component
--- Composite UNIQUE(id, layer_id, sublayer_id) added so
--- cve_layer_mapping's composite FK below has a matching constraint to
--- target. NOTE: MATCH FULL requires layer_id/sublayer_id to be both
--- NULL or both non-NULL together on the *referencing* side (sublayer_id
--- here is nullable while layer_id is NOT NULL) -- rows with sublayer_id
--- left NULL will be rejected by this FK check. Only safe if every
--- component row always gets a real sublayer_id.
 -- =====================================================================
 CREATE TABLE component (
     id          SERIAL PRIMARY KEY,
