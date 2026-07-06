@@ -36,49 +36,17 @@ END;
 $$ LANGUAGE plpgsql;
 
 
--- ---------------------------------------------------------------------
--- Drop existing objects (safe re-run). Comment this block out if you
--- don't want to drop existing tables.
--- ---------------------------------------------------------------------
--- DROP TABLE IF EXISTS alembic_version CASCADE;
--- DROP TABLE IF EXISTS cve_affected_component CASCADE;
--- DROP TABLE IF EXISTS cve_affected_chipset CASCADE;
--- DROP TABLE IF EXISTS cve_affected_device CASCADE;
--- DROP TABLE IF EXISTS vendor_cve CASCADE;
--- DROP TABLE IF EXISTS security_bulletin CASCADE;
--- DROP TABLE IF EXISTS cve_source_mapping CASCADE;
--- DROP TABLE IF EXISTS source_repository CASCADE;
--- DROP TABLE IF EXISTS cve_timeline_event CASCADE;
--- DROP TABLE IF EXISTS cve_exploit CASCADE;
--- DROP TABLE IF EXISTS exploit_source CASCADE;
--- DROP TABLE IF EXISTS cve_risk_metrics CASCADE;
--- DROP TABLE IF EXISTS cve_reference CASCADE;
--- DROP TABLE IF EXISTS cve_product_version_range CASCADE;
--- DROP TABLE IF EXISTS cve_product CASCADE;
--- DROP TABLE IF EXISTS cpe CASCADE;
--- DROP TABLE IF EXISTS cve_cwe CASCADE;
--- DROP TABLE IF EXISTS cve CASCADE;
--- DROP TABLE IF EXISTS cwe CASCADE;
--- DROP TABLE IF EXISTS preinstalled_app CASCADE;
--- DROP TABLE IF EXISTS sublayer CASCADE;
--- DROP TABLE IF EXISTS layer CASCADE;
--- DROP TABLE IF EXISTS device_android_build CASCADE;
--- DROP TABLE IF EXISTS device CASCADE;
--- DROP TABLE IF EXISTS chipset_component CASCADE;
--- DROP TABLE IF EXISTS chipset CASCADE;
--- DROP TABLE IF EXISTS android_version CASCADE;
--- DROP TABLE IF EXISTS vendor CASCADE;
-
 -- =====================================================================
 -- 1. vendor
 -- =====================================================================
 CREATE TABLE vendor (
     id                      SERIAL PRIMARY KEY,
-    name                    VARCHAR,
+    name                    VARCHAR NOT NULL,
     country                 VARCHAR,
     security_bulletin_url   VARCHAR,
     created_at              TIMESTAMP DEFAULT NOW(),
-    updated_at              TIMESTAMP DEFAULT NOW()
+    updated_at              TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_vendor_name UNIQUE (name)
 );
 
 CREATE TRIGGER trg_vendor_updated_at
@@ -91,11 +59,12 @@ EXECUTE FUNCTION set_updated_at();
 -- =====================================================================
 CREATE TABLE android_version (
     id              SERIAL PRIMARY KEY,
-    version_name    VARCHAR,
+    version_name    VARCHAR NOT NULL,
     api_level       INTEGER,
     release_date    DATE,
     created_at      TIMESTAMP DEFAULT NOW(),
-    updated_at      TIMESTAMP DEFAULT NOW()
+    updated_at      TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_android_version_name UNIQUE (version_name)
 );
 
 CREATE TRIGGER trg_android_version_updated_at
@@ -109,12 +78,13 @@ EXECUTE FUNCTION set_updated_at();
 CREATE TABLE chipset (
     id              SERIAL PRIMARY KEY,
     vendor          VARCHAR,
-    name            VARCHAR,
+    name            VARCHAR NOT NULL,
     model_number    VARCHAR,
     chipset_family  VARCHAR,
     release_date    DATE,
     created_at      TIMESTAMP DEFAULT NOW(),
-    updated_at      TIMESTAMP DEFAULT NOW()
+    updated_at      TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_chipset_name UNIQUE (name)
 );
 
 CREATE TRIGGER trg_chipset_updated_at
@@ -129,7 +99,8 @@ CREATE TABLE chipset_component (
     id          SERIAL PRIMARY KEY,
     chipset_id  INTEGER REFERENCES chipset(id),
     name        VARCHAR,
-    description TEXT
+    description TEXT,
+    CONSTRAINT uq_chipset_component_chipset_name UNIQUE (chipset_id, name)
 );
 
 CREATE INDEX idx_chipset_component_chipset_id ON chipset_component(chipset_id);
@@ -142,7 +113,7 @@ CREATE TABLE device (
     vendor_id               INTEGER REFERENCES vendor(id),
     chipset_id              INTEGER REFERENCES chipset(id),
     name                    VARCHAR,
-    codename                VARCHAR,
+    codename                VARCHAR NOT NULL,
     model_number            VARCHAR,
     device_type             VARCHAR,
     launch_os               VARCHAR,
@@ -155,7 +126,8 @@ CREATE TABLE device (
     eol_date                DATE,
     is_flagship             BOOLEAN,
     created_at              TIMESTAMP DEFAULT NOW(),
-    updated_at              TIMESTAMP DEFAULT NOW()
+    updated_at              TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_device_codename UNIQUE (codename)
 );
 
 CREATE TRIGGER trg_device_updated_at
@@ -178,7 +150,8 @@ CREATE TABLE device_android_build (
     release_date            DATE,
     security_patch_level    DATE,
     created_at               TIMESTAMP DEFAULT NOW(),
-    updated_at               TIMESTAMP DEFAULT NOW()
+    updated_at               TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_dab_device_build UNIQUE (device_id, build_number)
 );
 
 CREATE TRIGGER trg_device_android_build_updated_at
@@ -200,12 +173,18 @@ CREATE TABLE layer (
 
 -- =====================================================================
 -- 8. sublayer
+-- Composite UNIQUE(layer_id, id) added so component's composite FK
+-- below (FOREIGN KEY (layer_id, sublayer_id) REFERENCES sublayer(layer_id, id))
+-- has a matching constraint to target -- without this, CREATE TABLE
+-- component fails with "there is no unique constraint matching given
+-- keys for referenced table sublayer".
 -- =====================================================================
 CREATE TABLE sublayer (
     id          SERIAL PRIMARY KEY,
     layer_id    INTEGER REFERENCES layer(id),
     name        VARCHAR NOT NULL,
-    description TEXT
+    description TEXT,
+    CONSTRAINT uq_sublayer_layer_id_id UNIQUE (layer_id, id)
 );
 
 CREATE INDEX idx_sublayer_layer_id ON sublayer(layer_id);
@@ -220,7 +199,8 @@ CREATE TABLE preinstalled_app (
     package_name    VARCHAR,
     version         VARCHAR,
     created_at      TIMESTAMP DEFAULT NOW(),
-    updated_at      TIMESTAMP DEFAULT NOW()
+    updated_at      TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_preinstalled_app_device_package UNIQUE (device_id, package_name)
 );
 
 CREATE TRIGGER trg_preinstalled_app_updated_at
@@ -283,11 +263,12 @@ CREATE TABLE cve_cwe (
 -- =====================================================================
 CREATE TABLE cpe (
     id          SERIAL PRIMARY KEY,
-    cpe_uri     TEXT,
+    cpe_uri     TEXT NOT NULL,
     part        VARCHAR,
     vendor      VARCHAR,
     product     VARCHAR,
-    version     VARCHAR
+    version     VARCHAR,
+    CONSTRAINT uq_cpe_cpe_uri UNIQUE (cpe_uri)
 );
 
 -- =====================================================================
@@ -341,7 +322,8 @@ CREATE TABLE cve_risk_metrics (
     epss_percentile DOUBLE PRECISION,
     kev_listed      BOOLEAN,
     ransomware_use  BOOLEAN,
-    last_updated    TIMESTAMP DEFAULT NOW()
+    last_updated    TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_cve_risk_metrics_cve_id UNIQUE (cve_id)
 );
 
 CREATE TRIGGER trg_cve_risk_metrics_last_updated
@@ -356,8 +338,9 @@ CREATE INDEX idx_cve_risk_metrics_cve_id ON cve_risk_metrics(cve_id);
 -- =====================================================================
 CREATE TABLE exploit_source (
     id      SERIAL PRIMARY KEY,
-    name    VARCHAR,
-    url     VARCHAR
+    name    VARCHAR NOT NULL,
+    url     VARCHAR,
+    CONSTRAINT uq_exploit_source_name UNIQUE (name)
 );
 
 -- =====================================================================
@@ -371,7 +354,8 @@ CREATE TABLE cve_exploit (
     is_weaponized       BOOLEAN,
     first_seen_date     DATE,
     created_at          TIMESTAMP DEFAULT NOW(),
-    updated_at          TIMESTAMP DEFAULT NOW()
+    updated_at          TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_cve_exploit_cve_url UNIQUE (cve_id, exploit_url)
 );
 
 CREATE TRIGGER trg_cve_exploit_updated_at
@@ -393,7 +377,8 @@ CREATE TABLE cve_timeline_event (
     notes               TEXT,
     source_reference    VARCHAR,
     created_at          TIMESTAMP DEFAULT NOW(),
-    updated_at          TIMESTAMP DEFAULT NOW()
+    updated_at          TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_cve_timeline_event_type_date UNIQUE (cve_id, event_type, event_date)
 );
 
 CREATE TRIGGER trg_cve_timeline_event_updated_at
@@ -408,12 +393,13 @@ CREATE INDEX idx_cve_timeline_event_cve_id ON cve_timeline_event(cve_id);
 -- =====================================================================
 CREATE TABLE source_repository (
     id          SERIAL PRIMARY KEY,
-    name        VARCHAR,
+    name        VARCHAR NOT NULL,
     repo_type   VARCHAR,
     url         VARCHAR,
     branch      VARCHAR,
     created_at  TIMESTAMP DEFAULT NOW(),
-    updated_at  TIMESTAMP DEFAULT NOW()
+    updated_at  TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_source_repository_name UNIQUE (name)
 );
 
 CREATE TRIGGER trg_source_repository_updated_at
@@ -435,7 +421,8 @@ CREATE TABLE cve_source_mapping (
     vulnerable_variable      VARCHAR,
     diff_patch               TEXT,
     created_at               TIMESTAMP DEFAULT NOW(),
-    updated_at               TIMESTAMP DEFAULT NOW()
+    updated_at               TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_csm_cve_patch_hash UNIQUE (cve_id, patch_commit_hash)
 );
 
 CREATE TRIGGER trg_cve_source_mapping_updated_at
@@ -457,7 +444,8 @@ CREATE TABLE security_bulletin (
     severity_level  VARCHAR,
     bulletin_url    VARCHAR,
     created_at      TIMESTAMP DEFAULT NOW(),
-    updated_at      TIMESTAMP DEFAULT NOW()
+    updated_at      TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_security_bulletin_vendor_url UNIQUE (vendor_id, bulletin_url)
 );
 
 CREATE TRIGGER trg_security_bulletin_updated_at
@@ -556,28 +544,28 @@ CREATE TABLE alembic_version (
 );
 
 -- =====================================================================
--- 29. Component
+-- 29. component
+-- Composite UNIQUE(id, layer_id, sublayer_id) added so
+-- cve_layer_mapping's composite FK below has a matching constraint to
+-- target. NOTE: MATCH FULL requires layer_id/sublayer_id to be both
+-- NULL or both non-NULL together on the *referencing* side (sublayer_id
+-- here is nullable while layer_id is NOT NULL) -- rows with sublayer_id
+-- left NULL will be rejected by this FK check. Only safe if every
+-- component row always gets a real sublayer_id.
 -- =====================================================================
 CREATE TABLE component (
     id          SERIAL PRIMARY KEY,
-    layer_id   INTEGER NOT NULL,
+    layer_id    INTEGER NOT NULL,
     sublayer_id INTEGER,
-    name       VARCHAR NOT NULL,
+    name        VARCHAR NOT NULL,
     description TEXT,
 
-    FOREIGN KEY (layer_id, sublayer_id) REFERENCES sublayer(layer_id, id) MATCH FULL
+    FOREIGN KEY (layer_id, sublayer_id) REFERENCES sublayer(layer_id, id) MATCH FULL,
+    CONSTRAINT uq_component_id_layer_sublayer UNIQUE (id, layer_id, sublayer_id)
 );
--- CREATE TABLE component (
---     id          SERIAL PRIMARY KEY,
---     layer_id   INTEGER REFERENCES layer(id),
---     sublayer_id INTEGER REFERENCES sublayer(id),
---     name       VARCHAR NOT NULL,
---     description TEXT,
--- );
-
 
 -- =====================================================================
--- 30. CVE Component Mapping
+-- 30. cve_layer_mapping
 -- =====================================================================
 CREATE TABLE cve_layer_mapping (
     id           SERIAL PRIMARY KEY,
@@ -586,33 +574,16 @@ CREATE TABLE cve_layer_mapping (
     sublayer_id  INTEGER,
     component_id INTEGER,
 
-    FOREIGN KEY (component_id, layer_id, sublayer_id) 
+    FOREIGN KEY (component_id, layer_id, sublayer_id)
         REFERENCES component(id, layer_id, sublayer_id)
         MATCH FULL,
 
-    CONSTRAINT unique_cve_architecture_mapping 
+    CONSTRAINT unique_cve_architecture_mapping
         UNIQUE (cve_id, layer_id, sublayer_id, component_id)
 );
-
-ALTER TABLE vendor           ADD CONSTRAINT uq_vendor_name UNIQUE (name);
-ALTER TABLE chipset          ADD CONSTRAINT uq_chipset_name UNIQUE (name);
-ALTER TABLE device           ADD CONSTRAINT uq_device_codename UNIQUE (codename);
-ALTER TABLE cpe               ADD CONSTRAINT uq_cpe_cpe_uri UNIQUE (cpe_uri);
-ALTER TABLE exploit_source     ADD CONSTRAINT uq_exploit_source_name UNIQUE (name);
-ALTER TABLE source_repository  ADD CONSTRAINT uq_source_repository_name UNIQUE (name);
-ALTER TABLE chipset_component  ADD CONSTRAINT uq_chipset_component_chipset_name UNIQUE (chipset_id, name);
-ALTER TABLE device_android_build ADD CONSTRAINT uq_dab_device_build UNIQUE (device_id, build_number);
-ALTER TABLE preinstalled_app    ADD CONSTRAINT uq_preinstalled_app_device_package UNIQUE (device_id, package_name);
-ALTER TABLE cve_risk_metrics    ADD CONSTRAINT uq_cve_risk_metrics_cve_id UNIQUE (cve_id);
-ALTER TABLE cve_exploit         ADD CONSTRAINT uq_cve_exploit_cve_url UNIQUE (cve_id, exploit_url);
-ALTER TABLE cve_timeline_event  ADD CONSTRAINT uq_cve_timeline_event_type_date UNIQUE (cve_id, event_type, event_date);
-ALTER TABLE cve_source_mapping  ADD CONSTRAINT uq_csm_cve_patch_hash UNIQUE (cve_id, patch_commit_hash);
-ALTER TABLE security_bulletin   ADD CONSTRAINT uq_security_bulletin_vendor_url UNIQUE (vendor_id, bulletin_url);
 
 COMMIT;
 
 -- =====================================================================
 -- End of VulCrawlerDB schema
 -- =====================================================================
-
-

@@ -104,7 +104,7 @@ def load_cpe_configurations_for_cve(conn, cve_id: str, cpe_configurations: list)
 def load_all_cpe_data(conn, records: list) -> None:
     """ Loop over all raw NVD records and load their cpe_configurations.
     Requires cve rows to already exist (cve_product.cve_id is a FK to cve.id). """
-    
+
     processed = 0
     for rec in records:
         cve_id = rec.get("cve_id")
