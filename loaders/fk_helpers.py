@@ -30,9 +30,18 @@ def get_id_only(conn, table: str, lookup_column: str, lookup_value):
     This is about ownership (don't silently create a new layer/sublayer/device from a loader that doesn't own that table), not about race safety.
     """
     with conn.cursor() as cur:
-        cur.execute(f"SELECT id FROM {table} WHERE {lookup_column} = %s", (lookup_value,))
-        row = cur.fetchone()
-        if row is None:
-            logger.warning("No %s found for %s=%s", table, lookup_column, lookup_value)
+        cur.execute(
+            f"SELECT id FROM {table} WHERE {lookup_column} = %s", (lookup_value,))
+            row = cur.fetchone()
+            if row is None:
+                logger.warning("No %s found for %s=%s", table, lookup_column, lookup_value)
             return None
         return row[0]
+
+
+def alembic_version(conn, record: dict) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            " INSERT INTO alembic_version (version_num) VALUES (%(version_num)s)",
+            record,
+        )
