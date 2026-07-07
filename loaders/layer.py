@@ -27,7 +27,24 @@ def parse_layers(records: list) -> dict:
 
     return dict(layers)
 
-
+def get_sublayer_id(conn, layer_id: int, name: str) -> int | None:
+    """
+    Lookup-only, scoped to a specific layer_id -- sublayer names are
+    NOT globally unique (e.g. "System Application" exists under both
+    "Applications" and "Application Framework"), so layer_id is required
+    to avoid matching the wrong sublayer.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id FROM sublayer WHERE layer_id = %s AND name = %s",
+            (layer_id, name),
+        )
+        row = cur.fetchone()
+        if row is None:
+            logger.warning("No sublayer found for layer_id=%s name=%s", layer_id, name)
+            return None
+        return row[0]
+        
 def load_all_layers(conn, layers: dict) -> dict[str, int]:
     """
     Upsert all layer rows. 

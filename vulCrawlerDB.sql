@@ -560,7 +560,7 @@ CREATE TABLE component (
 -- =====================================================================
 -- 30. cve_layer_mapping
 -- =====================================================================
-CREATE TABLE cve_layer_mapping (
+CREATE TABLE cve_component_layer_mapping (
     id           SERIAL PRIMARY KEY,
     cve_id       VARCHAR(20) NOT NULL,
     layer_id     INTEGER NOT NULL,

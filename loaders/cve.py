@@ -11,14 +11,14 @@ def parse_cve_record(rec: dict) -> dict:
     v3_1 = cvss.get("v3_1") or {}
     v2 = cvss.get("v2") or {}
 
-    publish_date = rec["published"][:10]
+    publish_date = rec.get("published_date")[:10]
 
     return {
-        "id": rec["cve_id"],
-        "description": rec["description"],
-        "cvss_v2_score": v2.get("base_score"),
-        "cvss_v3_score": v3_0.get("base_score"),   
-        "cvss_v4_score": v3_1.get("base_score"),   
+        "id": rec.get("cve_id"),
+        "description": rec.get("description"),
+        "cvss_v2_score": v2.get("cvss_v2_score"),
+        "cvss_v3_score": v3_0.get("cvss_v3_score"),   
+        "cvss_v4_score": v3_1.get("cvss_v4_score"),   
         "severity": v3_1.get("severity"),
         "publish_date": publish_date,
         "discovery_date": publish_date,            
