@@ -3,7 +3,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 def parse_cpe_criteria(criteria: str) -> dict:
     """cpe:2.3:a:vendor:product:version:... -> {part, vendor, product, version}."""
     parts = criteria.split(":")
