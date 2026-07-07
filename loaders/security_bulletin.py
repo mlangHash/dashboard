@@ -13,6 +13,26 @@ def parse_security_bulletin_record(rec: dict) -> dict:
         "bulletin_url": rec.get("bulletin_url"),
     }
 
+def get_bulletin_ids(conn, vendor_id: int | None = None, title: str | None = None, published_date = None) -> list[int]:
+    filters = {
+        "vendor_id": vendor_id,
+        "title": title,
+        "published_date": published_date,
+    }
+
+    for key, val in filters.items():
+        if val is not None:
+            conditions.append(f"{key} = %s")
+            values.append(val)
+
+    query = "SELECT id FROM security_bulletin"
+    if conditions:
+        query += " WHERE" + " AND ".join(conditions)
+        
+    with conn.cursor() as cur:
+        cur.execute(query, values)
+        results = cur.fetchall()
+        return [res[0] for res in results]
 
 def upsert_security_bulletin(conn, rec: dict) -> int:
     parsed = parse_security_bulletin_record(rec)
@@ -23,9 +43,9 @@ def upsert_security_bulletin(conn, rec: dict) -> int:
             """
             INSERT INTO security_bulletin (vendor_id, title, published_date, severity_level, bulletin_url)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (vendor_id, bulletin_url) DO UPDATE SET
-                title = EXCLUDED.title,
+            ON CONFLICT (vendor_id, title, published_date) DO UPDATE SET
                 severity_level = EXCLUDED.severity_level
+                bulletin_url = EXCLUDED.bulletin_url
             RETURNING id
             """,
             (vendor_id, parsed["title"], parsed["published_date"],

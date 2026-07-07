@@ -13,7 +13,6 @@ def parse_cve_risk_metrics_record(rec: dict) -> dict:
 
 
 def upsert_cve_risk_metrics(conn, rec: dict) -> None:
-    """last_updated is trigger-managed; never set it here."""
     parsed = parse_cve_risk_metrics_record(rec)
     with conn.cursor() as cur:
         cur.execute(

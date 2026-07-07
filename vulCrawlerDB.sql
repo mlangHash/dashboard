@@ -439,13 +439,13 @@ CREATE INDEX idx_csm_repository_id ON cve_source_mapping(repository_id);
 CREATE TABLE security_bulletin (
     id              SERIAL PRIMARY KEY,
     vendor_id       INTEGER REFERENCES vendor(id),
-    title           VARCHAR,
-    published_date  DATE,
+    title           VARCHAR NOT NULL,
+    published_date  DATE NOT NULL,
     severity_level  VARCHAR,
     bulletin_url    VARCHAR,
     created_at      TIMESTAMP DEFAULT NOW(),
     updated_at      TIMESTAMP DEFAULT NOW(),
-    CONSTRAINT uq_security_bulletin_vendor_url UNIQUE (vendor_id, bulletin_url)
+    CONSTRAINT uq_security_bulletin_vendor_url UNIQUE (vendor_id, title, published_date)
 );
 
 CREATE TRIGGER trg_security_bulletin_updated_at
