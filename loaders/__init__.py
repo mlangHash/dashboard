@@ -21,4 +21,4 @@ from .preinstalledApps import load_all_preinstalled_apps
 from .security_bulletin import load_all_security_bulletins
 from .source_repository import load_all_source_repositories
 from .vendor_cve import load_all_vendor_cves
-form .vendor import load_all_vendors
+from .vendor import load_all_vendors

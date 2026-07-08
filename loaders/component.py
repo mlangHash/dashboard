@@ -1,7 +1,7 @@
 # loaders/component_loader.py
 import logging
 from loaders.fk_helpers import get_id_only
-from loaders.layer_loader import get_sublayer_id
+from loaders.layer import get_sublayer_id
 
 logger = logging.getLogger(__name__)
 

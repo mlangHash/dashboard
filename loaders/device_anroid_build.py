@@ -1,6 +1,6 @@
 import logging
 from loaders.fk_helpers import get_id_only
-from loaders.android_version_loader import get_or_create_android_version_id
+from loaders.android_version import get_or_create_android_version_id
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,5 @@
 import logging
-from loaders.component_loader import resolve_layer_and_sublayer_ids, find_component_id
+from loaders.component import resolve_layer_and_sublayer_ids, find_component_id
 
 logger = logging.getLogger(__name__)
 
