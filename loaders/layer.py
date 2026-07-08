@@ -21,7 +21,7 @@ def parse_layers(records: list) -> dict:
 
         sublayer_name = rec.get("sublayer")
         if sublayer_name:
-            sublayer_description = rec.get("sublayer_description", "")
+            sublayer_description = rec.get("sublayer_description", "Not Available")
             existing = layers[layer_name]["sublayers"].get(sublayer_name, "")
             layers[layer_name]["sublayers"][sublayer_name] = sublayer_description or existing
 
