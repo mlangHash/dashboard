@@ -7,7 +7,7 @@ def parse_cwe_record(rec: dict) -> dict:
     return {
         "cwe_id": rec["cwe_id"],
         "name": rec.get("name"),
-        "description": rec.get("description"),
+        "description": rec.get("description", "Not Available"),
     }
 
 

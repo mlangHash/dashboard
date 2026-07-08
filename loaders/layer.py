@@ -15,7 +15,7 @@ def parse_layers(records: list) -> dict:
         if not layer_name:
             continue
 
-        layer_description = rec.get("layer_description", "")
+        layer_description = rec.get("layer_description", "Not Available")
         if layer_description:
             layers[layer_name]["description"] = layer_description
 
