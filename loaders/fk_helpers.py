@@ -35,7 +35,7 @@ def get_id_only(conn, table: str, lookup_column: str, lookup_value):
         row = cur.fetchone()
         if row is None:
             logger.warning("No %s found for %s=%s", table, lookup_column, lookup_value)
-        return None
+            return None
         return row[0]
 
 
