@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from typing import Iterator
 
 import orjson
 
@@ -8,9 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 def load_records(filepath: str | Path) -> list[dict]:
-    """
-    read the specified filepath files
-    """
+    """Reads a JSON file and returns its records as a list of dicts."""
+
     filepath = Path(filepath)
     with open(filepath, "rb") as f:
         data = orjson.loads(f.read())
@@ -20,4 +18,3 @@ def load_records(filepath: str | Path) -> list[dict]:
 
     logger.info("Loaded %d records from %s", len(data), filepath)
     return data
-
