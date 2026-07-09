@@ -1,7 +1,7 @@
 import logging
 
 from DBConnection import get_db
-from parsers.NVD_parser import load_records
+from parsers.loadFiles import load_records
 import loaders as lds
 
 logging.basicConfig(level=logging.INFO)
