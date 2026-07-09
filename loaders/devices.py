@@ -1,7 +1,7 @@
 # loaders/device_loader.py
 import logging
-from loaders.vendor_loader import get_or_create_vendor_id
-from loaders.chipset_loader import get_or_create_chipset_id
+from loaders.vendor import get_or_create_vendor_id
+from loaders.chipset_and_components import get_or_create_chipset_id
 
 logger = logging.getLogger(__name__)
 

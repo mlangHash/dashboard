@@ -45,7 +45,7 @@ def upsert_chipset(conn, rec: dict) -> None:
 def load_all_chipsets(conn, records: list) -> None:
     for rec in records:
         upsert_chipset(conn, rec)
-_loader
+        
 
 def parse_chipset_component_record(rec: dict) -> dict:
     return {

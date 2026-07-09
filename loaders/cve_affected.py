@@ -1,6 +1,6 @@
 import logging
 from loaders.fk_helpers import get_id_only
-from loader.chipset_and_components import get_or_create_chipset_id
+from loaders.chipset_and_components import get_or_create_chipset_id
 
 logger = logging.getLogger(__name__)
 

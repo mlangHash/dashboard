@@ -32,10 +32,10 @@ def get_id_only(conn, table: str, lookup_column: str, lookup_value):
     with conn.cursor() as cur:
         cur.execute(
             f"SELECT id FROM {table} WHERE {lookup_column} = %s", (lookup_value,))
-            row = cur.fetchone()
-            if row is None:
-                logger.warning("No %s found for %s=%s", table, lookup_column, lookup_value)
-            return None
+        row = cur.fetchone()
+        if row is None:
+            logger.warning("No %s found for %s=%s", table, lookup_column, lookup_value)
+        return None
         return row[0]
 
 

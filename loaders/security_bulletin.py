@@ -19,7 +19,8 @@ def get_bulletin_ids(conn, vendor_id: int | None = None, title: str | None = Non
         "title": title,
         "published_date": published_date,
     }
-
+    conditions = []
+    values = []
     for key, val in filters.items():
         if val is not None:
             conditions.append(f"{key} = %s")

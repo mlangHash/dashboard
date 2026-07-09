@@ -1,6 +1,6 @@
 import logging 
-from loader.vendor import get_or_create_vendor_id
-from loader.security_bulletin import get_bulletin_ids
+from loaders.vendor import get_or_create_vendor_id
+from loaders.security_bulletin import get_bulletin_ids
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +9,7 @@ def parse_vendor_cve_records(rec: dict) -> dict:
         "vendor_name": rec.get("vendor_name"),
         "cve_id": rec.get("cve_id"),
         "bulletin_title": rec.get("bulletin_title", None),
-        "published_date": rec.get("published_date", None)
+        "published_date": rec.get("published_date", None),
         "patched_date": rec.get("patched_date"),
     }
 
