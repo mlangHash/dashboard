@@ -307,7 +307,8 @@ CREATE TABLE cve_reference (
     uri         TEXT,
     source      VARCHAR,
     tags        VARCHAR,
-    is_patch    BOOLEAN
+    is_patch    BOOLEAN,
+    CONSTRAINT uq_cve_reference UNIQUE (cve_id, uri)
 );
 
 CREATE INDEX idx_cve_reference_cve_id ON cve_reference(cve_id);
