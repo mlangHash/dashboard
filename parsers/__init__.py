@@ -50,8 +50,6 @@ def _dedup_cwe_prefer_filled(records: list[dict]) -> list[dict]:
     """
     Deduplicate CWE records by cwe_id, preferring records that have
     non-null name and description over those with nulls.
-    The CWE full-list file provides name/description; NVD/vendor parsers
-    only provide the numeric ID.
     """
     by_id: dict[int, dict] = {}
     for rec in records:
