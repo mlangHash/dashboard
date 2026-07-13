@@ -5,8 +5,8 @@ logger = logging.getLogger(__name__)
 def parse_cwe_record(rec: dict) -> dict:
     """Extract cwe table fields from a raw record."""
     return {
-        "cwe_id": rec["cwe_id"],
-        "name": rec.get("name"),
+        "cwe_id": rec.get("cwe_id"),
+        "name": rec.get("name", None),
         "description": rec.get("description", "Not Available"),
     }
 

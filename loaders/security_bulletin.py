@@ -28,7 +28,7 @@ def get_bulletin_ids(conn, vendor_id: int | None = None, title: str | None = Non
 
     query = "SELECT id FROM security_bulletin"
     if conditions:
-        query += " WHERE" + " AND ".join(conditions)
+        query += " WHERE " + " AND ".join(conditions)
         
     with conn.cursor() as cur:
         cur.execute(query, values)
@@ -45,7 +45,7 @@ def upsert_security_bulletin(conn, rec: dict) -> int:
             INSERT INTO security_bulletin (vendor_id, title, published_date, severity_level, bulletin_url)
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (vendor_id, title, published_date) DO UPDATE SET
-                severity_level = EXCLUDED.severity_level
+                severity_level = EXCLUDED.severity_level,
                 bulletin_url = EXCLUDED.bulletin_url
             RETURNING id
             """,
