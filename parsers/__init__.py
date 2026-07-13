@@ -1,34 +1,22 @@
 """
-Parser orchestrator — runs every source parser, merges results by table name,
-and deduplicates where needed.
+Parser orchestrator — runs consolidated source parsers, merges results by
+table name, and deduplicates where needed.
 
 Usage:
     from parsers import prepare_all
     dataset = prepare_all(Path("files"))
-    # dataset["cve"]           → list of loader-ready cve dicts
-    # dataset["cve_reference"] → list of loader-ready cve_reference dicts
+    # dataset["cve"]                → list of loader-ready cve dicts
+    # dataset["cwe"]                → list of loader-ready cwe dicts (with name & description)
+    # dataset["cve_timeline_event"] → list of timeline event dicts
     # ...
 """
 import logging
-from collections import defaultdict
 from pathlib import Path
 
-from parsers import nvd, asb, qualcomm, mediatek, samsung, vendor_bulletins, aosp
+from parsers.sources import parse_all_files
 
 logger = logging.getLogger(__name__)
 
-# ── Registry: add new parsers here ────────────────────────────────────
-# Order matters only for merge priority of 'cve' records — NVD should be
-# first so its data forms the base, and other sources enrich on top.
-ALL_PARSERS = [
-    nvd,
-    asb,
-    qualcomm,
-    mediatek,
-    samsung,
-    vendor_bulletins,
-    aosp,
-]
 
 # Tables where records should be deduplicated (key field(s) to dedup on)
 DEDUP_KEYS: dict[str, str | tuple[str, ...]] = {
@@ -37,6 +25,7 @@ DEDUP_KEYS: dict[str, str | tuple[str, ...]] = {
     "cwe":                  "cwe_id",
     "cve_cwe":              ("cve_id", "cwe_id"),
     "source_repository":    "name",
+    "cve_timeline_event":   ("cve_id", "event_type", "event_date"),
 }
 
 
@@ -55,6 +44,30 @@ def _dedup(records: list[dict], key: str | tuple[str, ...]) -> list[dict]:
             seen.add(val)
             result.append(rec)
     return result
+
+
+def _dedup_cwe_prefer_filled(records: list[dict]) -> list[dict]:
+    """
+    Deduplicate CWE records by cwe_id, preferring records that have
+    non-null name and description over those with nulls.
+    The CWE full-list file provides name/description; NVD/vendor parsers
+    only provide the numeric ID.
+    """
+    by_id: dict[int, dict] = {}
+    for rec in records:
+        cwe_id = rec.get("cwe_id")
+        if cwe_id is None:
+            continue
+        if cwe_id not in by_id:
+            by_id[cwe_id] = dict(rec)
+            continue
+        existing = by_id[cwe_id]
+        # Prefer non-null name and description
+        if existing.get("name") is None and rec.get("name") is not None:
+            existing["name"] = rec["name"]
+        if existing.get("description") is None and rec.get("description") is not None:
+            existing["description"] = rec["description"]
+    return list(by_id.values())
 
 
 def _merge_cve_records(records: list[dict]) -> list[dict]:
@@ -103,22 +116,22 @@ def prepare_all(data_dir: str | Path) -> dict[str, list[dict]]:
     deduplicate records. Returns a dict keyed by table name.
     """
     data_dir = Path(data_dir)
-    merged: dict[str, list[dict]] = defaultdict(list)
 
-    for parser_module in ALL_PARSERS:
-        name = parser_module.__name__.rsplit(".", 1)[-1]
-        logger.info("Running parser: %s", name)
-        try:
-            result = parser_module.prepare(data_dir)
-        except Exception:
-            logger.exception("Parser %s failed", name)
-            continue
+    # Phase 1: Parse all files (merge by table name happens inside)
+    merged = parse_all_files(data_dir)
 
-        for table_name, records in result.items():
-            merged[table_name].extend(records)
+    # Phase 2: CWE dedup with preference for filled records
+    if "cwe" in merged:
+        before = len(merged["cwe"])
+        merged["cwe"] = _dedup_cwe_prefer_filled(merged["cwe"])
+        after = len(merged["cwe"])
+        if before != after:
+            logger.info("Deduped cwe (prefer filled): %d → %d", before, after)
 
-    # ── Post-merge dedup ──────────────────────────────────────────
+    # Phase 3: Standard dedup for other tables
     for table_name, key in DEDUP_KEYS.items():
+        if table_name == "cwe":
+            continue  # already handled above
         if table_name in merged:
             before = len(merged[table_name])
             merged[table_name] = _dedup(merged[table_name], key)
@@ -126,11 +139,40 @@ def prepare_all(data_dir: str | Path) -> dict[str, list[dict]]:
             if before != after:
                 logger.info("Deduped %s: %d → %d", table_name, before, after)
 
-    # Special merge for cve records (multi-source enrichment)
+    # Phase 4: Special merge for cve records (multi-source enrichment)
     if "cve" in merged:
         before = len(merged["cve"])
         merged["cve"] = _merge_cve_records(merged["cve"])
         logger.info("Merged cve records: %d → %d", before, len(merged["cve"]))
+
+    # Phase 5: Ensure every referenced cve_id exists in the cve table to satisfy FK constraints
+    referenced_cves = set()
+    for table_name, records in merged.items():
+        if table_name == "cve":
+            continue
+        for rec in records:
+            if isinstance(rec, dict) and "cve_id" in rec and rec["cve_id"]:
+                referenced_cves.add(rec["cve_id"])
+
+    existing_cves = {rec["cve_id"] for rec in merged.get("cve", []) if "cve_id" in rec}
+    missing_cves = referenced_cves - existing_cves
+    if missing_cves:
+        logger.info("Backfilling %d missing CVE stubs to satisfy FK constraints", len(missing_cves))
+        if "cve" not in merged:
+            merged["cve"] = []
+        for cve_id in sorted(missing_cves):
+            merged["cve"].append({
+                "cve_id":           cve_id,
+                "description":      None,
+                "cvss_v2_score":    None,
+                "cvss_v3_score":    None,
+                "cvss_v4_score":    None,
+                "severity":         None,
+                "publish_date":     None,
+                "discovery_date":   None,
+                "origin_type":      None,
+                "exploited_in_wild": None,
+            })
 
     # Summary
     for table_name, records in sorted(merged.items()):
