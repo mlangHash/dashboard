@@ -1,7 +1,12 @@
 # Python standard library (bundled with Python 3.14.3; no pip install needed):
 # logging, re, pathlib, datetime, typing, atexit, contextlib, os, collections
 # python -m pip install -r requirements.txt
-python-dotenv>=1.0.1  # latest: 1.2.2
-psycopg-pool>=3.2.0  # latest: 3.3.1
-orjson>=3.10.0  # latest: 3.11.9
-python-dateutil>=2.8.2  # latest: 2.9.0.post0By
+ijson>=3.5.0
+orjson>=3.11.9
+psycopg>=3.3.4
+psycopg-binary>=3.3.4
+psycopg-pool>=3.3.1
+python-dateutil>=2.9.0.post0
+python-dotenv>=1.2.2
+six>=1.17.0
+typing_extensions>=4.15.0
