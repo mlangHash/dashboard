@@ -31,6 +31,7 @@ def main() -> None:
         # 1. Reference/lookup tables (no FKs to other app tables)
         lds.load_all_vendors(conn, dataset.get("vendor", []))
         lds.load_all_cwes(conn, dataset.get("cwe", []))
+        lds.load_all_android_versions(conn, dataset.get("android_version", []))
 
         # 2. Core CVE table
         lds.load_all_cves(conn, dataset.get("cve", []))
@@ -43,6 +44,9 @@ def main() -> None:
         # 4. Hardware tables
         lds.load_all_chipsets(conn, dataset.get("chipset", []))
         lds.load_all_cve_affected_chipsets(conn, dataset.get("cve_affected_chipset", []))
+
+        # 4.5 Device tables
+        lds.load_all_devices(conn, dataset.get("device", []))
 
         # 5. Bulletin / vendor-CVE tables
         lds.load_all_security_bulletins(conn, dataset.get("security_bulletin", []))

@@ -14,6 +14,7 @@ import logging
 from pathlib import Path
 
 from parsers.sources import parse_all_files
+from parsers.oem import prepare as parse_oem
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,8 @@ DEDUP_KEYS: dict[str, str | tuple[str, ...]] = {
     "cve_cwe":              ("cve_id", "cwe_id"),
     "source_repository":    "name",
     "cve_timeline_event":   ("cve_id", "event_type", "event_date"),
+    "android_version":      "version_name",
+    "device":               "codename",
 }
 
 
@@ -119,6 +122,13 @@ def prepare_all(data_dir: str | Path) -> dict[str, list[dict]]:
 
     # Phase 1: Parse all files (merge by table name happens inside)
     merged = parse_all_files(data_dir)
+
+    # Run the new OEM parser (CSV-to-JSON is auto-run if needed)
+    oem_data = parse_oem(data_dir)
+    for table_name, records in oem_data.items():
+        if table_name not in merged:
+            merged[table_name] = []
+        merged[table_name].extend(records)
 
     # Phase 2: CWE dedup with preference for filled records
     if "cwe" in merged:

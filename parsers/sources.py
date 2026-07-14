@@ -1,11 +1,4 @@
 """
-Consolidated source-file parsers — one function per JSON data file.
-
-Every parse_* function reads a single JSON file from data_dir and returns
-a dict[str, list[dict]] keyed by target DB table name.  The orchestrator
-in parsers/__init__.py calls parse_all_files() which invokes them all,
-merges results, and deduplicates.
-
 Tables populated:
   cve, cwe, cve_cwe, cve_reference, cpe, vendor, security_bulletin,
   vendor_cve, chipset, cve_affected_chipset, source_repository,
