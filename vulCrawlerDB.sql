@@ -267,6 +267,7 @@ CREATE TABLE cpe (
     part        VARCHAR,
     vendor      VARCHAR,
     product     VARCHAR,
+    relevance   VARCHAR, -- android or others; default = NULL
     version     VARCHAR,
     CONSTRAINT uq_cpe_cpe_uri UNIQUE (cpe_uri)
 );
