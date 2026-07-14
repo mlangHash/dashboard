@@ -15,11 +15,77 @@ def parse_cpe_criteria(criteria: str) -> dict:
     }
 
 
+def is_chipset_cpe(parsed_cpe: dict) -> bool:
+    """Determine if a parsed CPE represents a chipset."""
+    part = parsed_cpe.get("part")
+    if part != "h":
+        return False
+        
+    vendor = (parsed_cpe.get("vendor") or "").lower()
+    product = (parsed_cpe.get("product") or "").lower()
+    
+    # Chipset vendors
+    if vendor in ("qualcomm", "mediatek", "unisoc"):
+        return True
+        
+    # Samsung Exynos
+    if vendor == "samsung" and "exynos" in product:
+        return True
+        
+    # Google Tensor
+    if vendor == "google" and "tensor" in product:
+        return True
+        
+    # Heuristics on product name
+    if "snapdragon" in product or "dimensity" in product or "helio" in product:
+        return True
+        
+    return False
+
+
+def guess_chipset_vendor_from_cpe(vendor: str, product: str) -> str:
+    """Guess a normalized chipset vendor name from CPE vendor/product fields."""
+    vendor_lower = vendor.lower()
+    product_lower = product.lower()
+    if "qualcomm" in vendor_lower or "qualcomm" in product_lower or "snapdragon" in product_lower:
+        return "Qualcomm"
+    if "mediatek" in vendor_lower or "mediatek" in product_lower or "dimensity" in product_lower or "helio" in product_lower:
+        return "MediaTek"
+    if "unisoc" in vendor_lower or "unisoc" in product_lower:
+        return "Unisoc"
+    if "samsung" in vendor_lower or "exynos" in product_lower:
+        return "Samsung"
+    if "google" in vendor_lower or "tensor" in product_lower:
+        return "Google"
+    return vendor.capitalize()
+
+
+def push_chipset_from_cpe(conn, parsed_cpe: dict) -> None:
+    """Inserts the chipset into the chipset table if it doesn't already exist."""
+    name = parsed_cpe.get("product")
+    vendor = guess_chipset_vendor_from_cpe(parsed_cpe.get("vendor", ""), name)
+    
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO chipset (name, vendor)
+            VALUES (%s, %s)
+            ON CONFLICT (name) DO NOTHING
+            """,
+            (name, vendor),
+        )
+    logger.info("Pushed chipset from CPE: %s (%s)", name, vendor)
+
+
 def get_or_create_cpe_id(conn, criteria: str) -> int:
     """
     Atomic upsert-and-return-id, relies on the uq_cpe_cpe_uri UNIQUE constraint on cpe.cpe_uri.
+    Also registers the chipset if this CPE configuration represents a chipset.
     """
     parsed = parse_cpe_criteria(criteria)
+    if is_chipset_cpe(parsed):
+        push_chipset_from_cpe(conn, parsed)
+
     with conn.cursor() as cur:
         cur.execute(
             """
