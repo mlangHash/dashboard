@@ -1,15 +1,3 @@
-"""
-Parser orchestrator — runs consolidated source parsers, merges results by
-table name, and deduplicates where needed.
-
-Usage:
-    from parsers import prepare_all
-    dataset = prepare_all(Path("files"))
-    # dataset["cve"]                → list of loader-ready cve dicts
-    # dataset["cwe"]                → list of loader-ready cwe dicts (with name & description)
-    # dataset["cve_timeline_event"] → list of timeline event dicts
-    # ...
-"""
 import logging
 from pathlib import Path
 
@@ -29,6 +17,7 @@ DEDUP_KEYS: dict[str, str | tuple[str, ...]] = {
     "cve_timeline_event":   ("cve_id", "event_type", "event_date"),
     "android_version":      "version_name",
     "device":               "codename",
+    "component":            ("name", "layer")
 }
 
 
