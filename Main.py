@@ -1,7 +1,3 @@
-"""
-Main entry point — orchestrates parsing all JSON data files and loading
-them into the VulCrawlerDB PostgreSQL database.
-"""
 import logging
 from pathlib import Path
 
@@ -19,7 +15,7 @@ def main() -> None:
     # ── Phase 1: Parse all source files into a unified dataset ────
     logger.info("Phase 1: Parsing all data files from %s", DATA_DIR)
     dataset = prepare_all(DATA_DIR)
-
+    print(dataset.keys())
     if not dataset:
         logger.warning("No data parsed. Exiting.")
         return
