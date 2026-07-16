@@ -8,7 +8,7 @@ def parse_layers(records: list) -> dict:
     """
     Build a nested layer -> sublayer structure from raw classification records.
     """
-    layers = defaultdict(lambda: {"description": "", "sublayers": {}})
+    layers = defaultdict(lambda: {"description": "", "sublayers": []})
 
     for rec in records:
         layer_name = rec.get("layer")
@@ -19,11 +19,19 @@ def parse_layers(records: list) -> dict:
         if layer_description:
             layers[layer_name]["description"] = layer_description
 
-        sublayer_name = rec.get("sublayer")
-        if sublayer_name:
-            sublayer_description = rec.get("sublayer_description", "Not Available")
-            existing = layers[layer_name]["sublayers"].get(sublayer_name, "")
-            layers[layer_name]["sublayers"][sublayer_name] = sublayer_description or existing
+        raw_sublayers = rec.get("sublayers") or []
+        for sub_rec in raw_sublayers:
+            sublayer_name = sub_rec.get("sublayer")
+            if sublayer_name:
+                sublayer_description = sub_rec.get("sublayer_description", "Not Available")
+                existing = next((sub for sub in layers[layer_name]["sublayers"] if sub["sublayer"] == sublayer_name), None)
+                if not existing:
+                    layers[layer_name]["sublayers"].append({
+                        "sublayer": sublayer_name,
+                        "sublayer_description": sublayer_description
+                    })
+                elif sublayer_description and sublayer_description != "Not Available":
+                    existing["sublayer_description"] = sublayer_description
 
     return dict(layers)
 
@@ -75,7 +83,9 @@ def load_all_sublayers(conn, layers: dict, layer_ids: dict[str, int]) -> None:
         for layer_name, data in layers.items():
             layer_id = layer_ids[layer_name]
 
-            for sublayer_name, sublayer_description in data["sublayers"].items():
+            for sublayer in data["sublayers"]:
+                sublayer_name = sublayer["sublayer"]
+                sublayer_description = sublayer["sublayer_description"]
                 cur.execute(
                     "SELECT id FROM sublayer WHERE layer_id = %s AND name = %s",
                     (layer_id, sublayer_name),
