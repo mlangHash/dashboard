@@ -41,17 +41,23 @@ def insert_component(conn, layer_id: int, sublayer_id: int, name: str, descripti
     return component_id
 
 
-def find_component_id(conn, layer_id: int, sublayer_id: int, name: str, description: str = None) -> int:
+def find_component_id(conn, layer_id: int, sublayer_id: int | None, name: str, description: str = None) -> int:
     """
     Checks whether a component row already exists for this exact
     (layer_id, sublayer_id, name); inserts it via insert_component if
     missing.
     """
     with conn.cursor() as cur:
-        cur.execute(
-            "SELECT id FROM component WHERE layer_id = %s AND sublayer_id = %s AND name = %s",
-            (layer_id, sublayer_id, name),
-        )
+        if sublayer_id is None:
+            cur.execute(
+                "SELECT id FROM component WHERE layer_id = %s AND sublayer_id IS NULL AND name = %s",
+                (layer_id, name),
+            )
+        else:
+            cur.execute(
+                "SELECT id FROM component WHERE layer_id = %s AND sublayer_id = %s AND name = %s",
+                (layer_id, sublayer_id, name),
+            )
         row = cur.fetchone()
 
     if row:
