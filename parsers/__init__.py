@@ -182,6 +182,14 @@ def prepare_all(data_dir: str | Path) -> dict[str, list[dict]]:
                 "exploited_in_wild": None,
             })
 
+    # Add the four standard layers with empty sublayers list
+    merged["layer_sublayer"] = [
+        {"layer": "Application", "layer_description": "Application Layer", "sublayers": []},
+        {"layer": "Framework", "layer_description": "Application Framework Layer", "sublayers": []},
+        {"layer": "Kernel/os", "layer_description": "Kernel / Operating System Layer", "sublayers": []},
+        {"layer": "hardware", "layer_description": "Hardware / Chipset OEM Layer", "sublayers": []},
+    ]
+
     # Summary
     for table_name, records in sorted(merged.items()):
         logger.info("  %-30s %6d records", table_name, len(records))
